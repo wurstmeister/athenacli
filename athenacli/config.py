@@ -19,7 +19,8 @@ LOGGER = logging.getLogger(__name__)
 
 class AWSConfig(object):
     def __init__(self, aws_access_key_id, aws_secret_access_key,
-                 region, s3_staging_dir, work_group, profile, config):
+                 region, s3_staging_dir, work_group, profile, config,
+                 result_reuse_enable=None, result_reuse_minutes=None):
         key = 'aws_profile %s' % profile
         try:
             _cfg = config[key]
@@ -36,12 +37,36 @@ class AWSConfig(object):
         self.work_group = self.get_val(work_group, _cfg['work_group'])
         # enable connection to assume role
         self.role_arn = self.get_val(_cfg.get('role_arn'))
+        # query result reuse settings
+        self.result_reuse_enable = self.get_bool(result_reuse_enable, _cfg.get('result_reuse_enable'), False)
+        self.result_reuse_minutes = self.get_int(result_reuse_minutes, _cfg.get('result_reuse_minutes'), 60)
 
     def get_val(self, *vals):
         """Return the first True value in `vals` list, otherwise return None."""
         for v in vals:
             if v:
                 return v
+
+    def get_bool(self, *vals):
+        """Return the first non-None value as boolean, with string parsing support."""
+        for v in vals:
+            if v is not None:
+                if isinstance(v, bool):
+                    return v
+                if isinstance(v, str):
+                    return v.lower() in ('true', '1', 'yes', 'on')
+                return bool(v)
+        return False
+
+    def get_int(self, *vals):
+        """Return the first non-None value as int, with string parsing support."""
+        for v in vals:
+            if v is not None:
+                try:
+                    return int(v)
+                except (ValueError, TypeError):
+                    continue
+        return 60  # default
 
     def get_region(self):
         """Try to get region name from aws credentials/config files or environment variables"""

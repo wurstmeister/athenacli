@@ -3,6 +3,7 @@ TBD
 
 * Allow catalog to be specified as part of the database argument. ([<catalog>.]<database>)
 * Support AWS_PROFILE environment variable for profile selection.
+* Add query result reuse support with configurable TTL (requires Athena engine version 3).
 
 1.6.8 (2022/05/15)
 ===================
