@@ -17,15 +17,15 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 install_requirements = [
-    'click>=7.0',
-    'Pygments>=1.6,<=2.11.1',
-    "prompt_toolkit>=3.0.3,<4.0.0",
-    'sqlparse>=0.3.0,<0.5.0',
-    'configobj>=5.0.5',
-    'cli_helpers[styles]>=1.1.0',
-    'botocore>=1.5.52',
-    'boto3>=1.4.4',
-    'PyAthena>=1.2.2',
+    'click>=8.1.8',
+    'Pygments>=2.19.2',
+    "prompt_toolkit>=3.0.52,<4.0.0",
+    'sqlparse>=0.5.4',
+    'configobj>=5.0.9',
+    'cli_helpers[styles]>=2.7.0',
+    'botocore>=1.35.0',
+    'boto3>=1.35.0',
+    'PyAthena>=3.20.0',
 ]
 
 setup(
