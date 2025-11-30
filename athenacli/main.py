@@ -615,7 +615,7 @@ def is_mutating(status):
 @click.option('--s3-staging-dir', type=str, help="Amazon S3 staging directory where query results are stored.")
 @click.option('--work_group', type=str, help="Amazon Athena workgroup in which query is run, default is primary")
 @click.option('--athenaclirc', default=ATHENACLIRC, type=click.Path(dir_okay=False), help="Location of athenaclirc file.")
-@click.option('--profile', type=str, default='default', help='AWS profile')
+@click.option('--profile', type=str, help='AWS profile (defaults to AWS_PROFILE env var or "default")')
 @click.option('--table-format', type=str, default='csv', help='Table format used with -e option.')
 @click.argument('database', default='default', nargs=1)
 def cli(execute, region, aws_access_key_id, aws_secret_access_key,
@@ -640,8 +640,8 @@ def cli(execute, region, aws_access_key_id, aws_secret_access_key,
         write_default_config(DEFAULT_CONFIG_FILE, athenaclirc)
         sys.exit(1)
 
-    if profile != 'default':
-        os.environ['AWS_PROFILE'] = profile
+    # Use --profile if provided, otherwise respect AWS_PROFILE env var, default to 'default'
+    profile = profile or os.environ.get('AWS_PROFILE', 'default')
 
     athenacli = AthenaCli(
         region=region,

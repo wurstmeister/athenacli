@@ -2,6 +2,7 @@ TBD
 =====
 
 * Allow catalog to be specified as part of the database argument. ([<catalog>.]<database>)
+* Support AWS_PROFILE environment variable for profile selection.
 
 1.6.8 (2022/05/15)
 ===================
