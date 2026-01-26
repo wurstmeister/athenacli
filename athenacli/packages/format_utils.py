@@ -1,34 +1,46 @@
 # -*- coding: utf-8 -*-
 
 
-def format_status(rows_length=None, cursor=None):
-    return rows_status(rows_length) + statistics(cursor)
+def format_status(rows_length=None, cursor=None, backend=None):
+    """Format query status including row count and backend-specific statistics.
+
+    Args:
+        rows_length: Number of rows returned
+        cursor: Database cursor after query execution
+        backend: DatabaseBackend instance for backend-specific formatting
+
+    Returns:
+        str: Formatted status message
+    """
+    return rows_status(rows_length) + statistics(cursor, backend)
+
 
 def rows_status(rows_length):
+    """Format row count message.
+
+    Args:
+        rows_length: Number of rows returned
+
+    Returns:
+        str: Row count message
+    """
     if rows_length:
         return '%d row%s in set' % (rows_length, '' if rows_length == 1 else 's')
     else:
         return 'Query OK'
 
-def statistics(cursor):
-    if cursor:
-        # Most regions are $5 per TB: https://aws.amazon.com/athena/pricing/
-        approx_cost = cursor.data_scanned_in_bytes / (1024 ** 4) * 5
 
-        return '\nExecution time: %d ms, Data scanned: %s, Approximate cost: $%.2f' % (
-                cursor.engine_execution_time_in_millis,
-                humanize_size(cursor.data_scanned_in_bytes),
-                approx_cost)
+def statistics(cursor, backend=None):
+    """Format backend-specific execution statistics.
+
+    Args:
+        cursor: Database cursor after query execution
+        backend: DatabaseBackend instance for backend-specific formatting
+
+    Returns:
+        str: Formatted statistics (may be empty for some backends)
+    """
+    if cursor and backend:
+        return backend.format_statistics(cursor)
     else:
         return ''
-
-def humanize_size(num_bytes):
-    suffixes = ['B', 'KB', 'MB', 'GB', 'TB']
-
-    suffix_index = 0
-    while num_bytes >= 1024 and suffix_index < len(suffixes) - 1:
-        num_bytes /= 1024.0
-        suffix_index += 1
-
-    num = ('%.2f' % num_bytes).rstrip('0').rstrip('.')
-    return '%s %s' % (num, suffixes[suffix_index])

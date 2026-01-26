@@ -28,6 +28,11 @@ install_requirements = [
     'PyAthena>=3.20.0',
 ]
 
+# Optional dependencies for Redshift support
+redshift_requirements = [
+    'psycopg2-binary>=2.9.0',
+]
+
 setup(
     name='athenacli',
     author='athenacli Core Team',
@@ -38,6 +43,9 @@ setup(
         'athenacli': [
             'athenaclirc',
             'packages/literals/literals.json'
+        ],
+        'redshiftcli': [
+            'redshiftclirc',
         ]
     },
     description=description,
@@ -45,8 +53,14 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/dbcli/athenacli",
     install_requires=install_requirements,
+    extras_require={
+        'redshift': redshift_requirements,
+    },
     entry_points={
-        'console_scripts': ['athenacli = athenacli.main:cli'],
+        'console_scripts': [
+            'athenacli = athenacli.main:cli',
+            'redshiftcli = redshiftcli.main:cli',
+        ],
     },
     classifiers=[
         'Intended Audience :: Developers',

@@ -50,17 +50,9 @@ class CompletionRefresher(object):
     def _bg_refresh(self, sqlexecute, callbacks, completer_options):
         completer = AthenaCompleter(**completer_options)
 
-        # Create a new pgexecute method to popoulate the completions.
-        e = sqlexecute
-        executor = SQLExecute(
-            aws_access_key_id = e.aws_access_key_id,
-            aws_secret_access_key = e.aws_secret_access_key,
-            region_name = e.region_name,
-            s3_staging_dir = e.s3_staging_dir,
-            work_group = e.work_group,
-            role_arn = e.role_arn,
-            database = e.database
-        )
+        # Reuse the existing sqlexecute for background refresh
+        # (Backend abstraction makes it simpler - no need to recreate)
+        executor = sqlexecute
 
         # If callbacks is a single function then push it into a list.
         if callable(callbacks):
@@ -109,8 +101,38 @@ def refresh_schemata(completer, executor):
 
 @refresher('tables')
 def refresh_tables(completer, executor):
-    completer.extend_relations(executor.tables(), kind='tables')
-    completer.extend_columns(executor.table_columns(), kind='tables')
+    # For Redshift/PostgreSQL backends, don't escape identifiers
+    # Schema-qualified names like "schema.table" would be incorrectly quoted as
+    # a single identifier, when they need to be unquoted or quoted separately
+    from athenacli.backends import RedshiftBackend
+
+    if isinstance(executor.backend, RedshiftBackend):
+        # Don't escape Redshift identifiers - they're case-insensitive
+        # and schema.table should not be quoted as a single identifier
+        tables_data = list(executor.tables())
+
+        metadata = completer.dbmetadata['tables']
+        for relname_tuple in tables_data:
+            relname = relname_tuple[0]
+            try:
+                metadata[completer.dbname][relname] = ['*']
+            except KeyError:
+                pass
+            completer.all_completions.add(relname)
+
+        # For columns, also skip escaping
+        try:
+            column_data = list(executor.table_columns())
+        except Exception:
+            column_data = []
+
+        for relname, column in column_data:
+            metadata[completer.dbname][relname].append(column)
+            completer.all_completions.add(column)
+    else:
+        # Default behavior for Athena and other backends
+        completer.extend_relations(executor.tables(), kind='tables')
+        completer.extend_columns(executor.table_columns(), kind='tables')
 
 
 @refresher('special_commands')

@@ -33,6 +33,7 @@ from pyathena.error import OperationalError
 
 import athenacli.packages.special as special
 from athenacli.sqlexecute import SQLExecute
+from athenacli.backends import AthenaBackend
 from athenacli.completer import AthenaCompleter
 from athenacli.style import AthenaStyle
 from athenacli.completion_refresher import CompletionRefresher
@@ -43,7 +44,6 @@ from athenacli.key_bindings import cli_bindings
 from athenacli.clitoolbar import create_toolbar_tokens_func
 from athenacli.lexer import Lexer
 from athenacli.clibuffer import cli_is_multiline
-from athenacli.sqlexecute import SQLExecute
 from athenacli.config import read_config_files, write_default_config, mkdir_p, AWSConfig
 
 
@@ -195,7 +195,7 @@ For more details about the error, you can check the log file: %s''' % (athenacli
         return [(None, None, None, "Changed prompt format to %s" % arg)]
 
     def connect(self, aws_config, database):
-        self.sqlexecute = SQLExecute(
+        backend = AthenaBackend(
             aws_access_key_id = aws_config.aws_access_key_id,
             aws_secret_access_key = aws_config.aws_secret_access_key,
             region_name = aws_config.region,
@@ -206,6 +206,7 @@ For more details about the error, you can check the log file: %s''' % (athenacli
             result_reuse_enable = aws_config.result_reuse_enable,
             result_reuse_minutes = aws_config.result_reuse_minutes
         )
+        self.sqlexecute = SQLExecute(backend)
 
     def handle_editor_command(self, text):
         """

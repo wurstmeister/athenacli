@@ -2,7 +2,6 @@
 
 import logging
 import sqlparse
-import pyathena
 
 from athenacli.packages import special
 from athenacli.packages.format_utils import format_status
@@ -11,72 +10,39 @@ logger = logging.getLogger(__name__)
 
 
 class SQLExecute(object):
-    DATABASES_QUERY = 'SHOW DATABASES'
-    TABLES_QUERY = 'SHOW TABLES'
-    TABLE_COLUMNS_QUERY = '''
-        SELECT table_name, column_name FROM information_schema.columns
-        WHERE table_schema = '%s'
-        ORDER BY table_name, ordinal_position
-    '''
+    """SQL execution wrapper that uses a database backend abstraction.
 
-    def __init__(
-        self,
-        aws_access_key_id,
-        aws_secret_access_key,
-        region_name,
-        s3_staging_dir,
-        work_group,
-        role_arn,
-        database,
-        result_reuse_enable=False,
-        result_reuse_minutes=60
-    ):
-        # Handle database parameter that may contain catalog.database format
-        if database and '.' in database:
-            catalog_name, database = database.split('.', 1)
-        else:
-            catalog_name = None
-        self.aws_access_key_id = aws_access_key_id
-        self.aws_secret_access_key = aws_secret_access_key
-        self.region_name = region_name
-        self.s3_staging_dir = s3_staging_dir
-        self.work_group = work_group
-        self.role_arn = role_arn
-        self.database = database
-        self.catalog_name = catalog_name or 'AwsDataCatalog'
-        self.result_reuse_enable = result_reuse_enable
-        self.result_reuse_minutes = result_reuse_minutes
-        self.connect()
+    This class provides a consistent interface for executing SQL queries
+    regardless of the underlying database backend (Athena, Redshift, etc.).
+    """
+
+    def __init__(self, backend):
+        """Initialize SQLExecute with a database backend.
+
+        Args:
+            backend: DatabaseBackend instance (AthenaBackend, RedshiftBackend, etc.)
+        """
+        self.backend = backend
+        self.database = backend.database
 
     def connect(self, database=None):
-        # Handle database parameter that may contain catalog.database format
-        if database and '.' in database:
-            catalog_name, database = database.split('.', 1)
-        else:
-            catalog_name = None
-        conn_params = {
-            'aws_access_key_id': self.aws_access_key_id,
-            'aws_secret_access_key': self.aws_secret_access_key,
-            'region_name': self.region_name,
-            's3_staging_dir': self.s3_staging_dir,
-            'work_group': self.work_group,
-            'schema_name': database or self.database,
-            'role_arn': self.role_arn,
-            'poll_interval': 0.2,  # 200ms
-            'catalog_name': catalog_name or self.catalog_name
-        }
-        
-        # Add result reuse parameters if enabled
-        if self.result_reuse_enable:
-            conn_params['result_reuse_enable'] = True
-            conn_params['result_reuse_minutes'] = self.result_reuse_minutes
-        
-        conn = pyathena.connect(**conn_params)
-        self.database = database or self.database
+        """Connect to database using the backend.
 
-        if hasattr(self, 'conn'):
-            self.conn.close()
-        self.conn = conn
+        Args:
+            database: Optional database to connect to
+        """
+        self.backend.connect(database)
+        self.database = self.backend.database
+
+    @property
+    def conn(self):
+        """Get connection from backend for compatibility."""
+        return self.backend.conn
+
+    @property
+    def region_name(self):
+        """Get region name from backend if available."""
+        return getattr(self.backend, 'region_name', None)
 
     def run(self, statement):
         '''Execute the sql in the database and return the results.
@@ -101,7 +67,7 @@ class SQLExecute(object):
                 special.set_expanded_output(True)
                 sql = sql[:-2].strip()
 
-            cur = self.conn.cursor()
+            cur = self.backend.get_cursor()
 
             try:
                 for result in special.execute(cur, sql):
@@ -114,35 +80,30 @@ class SQLExecute(object):
         '''Get the current result's data from the cursor.'''
         title = headers = None
 
-        special.set_output_location(cursor.output_location)
+        # Set output location if backend supports it (Athena-specific)
+        if self.backend.supports_special_command('output_location') and hasattr(cursor, 'output_location'):
+            special.set_output_location(cursor.output_location)
 
         # cursor.description is not None for queries that return result sets,
         # e.g. SELECT or SHOW.
         if cursor.description is not None:
             headers = [x[0] for x in cursor.description]
             rows = cursor.fetchall()
-            status = format_status(rows_length=len(rows), cursor=cursor)
+            status = format_status(rows_length=len(rows), cursor=cursor, backend=self.backend)
         else:
             logger.debug('No rows in result.')
             rows = None
-            status = format_status(rows_length=None, cursor=cursor)
+            status = format_status(rows_length=None, cursor=cursor, backend=self.backend)
         return (title, rows, headers, status)
 
     def tables(self):
         '''Yields table names.'''
-        with self.conn.cursor() as cur:
-            cur.execute(self.TABLES_QUERY)
-            for row in cur:
-                yield row
+        return self.backend.tables()
 
     def table_columns(self):
         '''Yields column names.'''
-        with self.conn.cursor() as cur:
-            cur.execute(self.TABLE_COLUMNS_QUERY % self.database)
-            for row in cur:
-                yield row
+        return self.backend.table_columns()
 
     def databases(self):
-        with self.conn.cursor() as cur:
-            cur.execute(self.DATABASES_QUERY)
-            return [x[0] for x in cur.fetchall()]
+        '''Get list of database names.'''
+        return self.backend.databases()
