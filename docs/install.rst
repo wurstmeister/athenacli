@@ -31,3 +31,20 @@ For MacOS users, you can also use Homebrew to install it:
 .. code-block:: bash
 
     $ brew install athenacli
+
+Nix (Linux/macOS)
+------------------
+
+For Nix users, you can run the CLIs directly from the flake:
+
+.. code-block:: bash
+
+    $ nix run .#athenacli -- --help
+    $ nix run .#redshiftcli -- --help
+
+To install into your user profile:
+
+.. code-block:: bash
+
+    $ nix profile install .#athenacli
+    $ nix profile install .#redshiftcli

@@ -40,6 +40,24 @@ Once the virtualenv is activated, cd into the local clone of athenacli folder an
 
 This will install the necessary dependencies as well as install athenacli from the working folder into a virtualenv. Athenacli is installed in an editable way, so any changes made to the code is immediately available in the installed version of athenacli. This makes it easy to change something in the code, launch athenacli and check the effects of your change.
 
+Nix development shell
+-----------------------
+
+If you prefer Nix (Linux/macOS), you can use the flake to enter a development
+environment:
+
+.. code-block:: bash
+
+    $ nix develop
+
+From the shell, you can run the CLIs and tests:
+
+.. code-block:: bash
+
+    $ athenacli --help
+    $ redshiftcli --help
+    $ pytest
+
 Running the tests
 ------------------
 
@@ -57,6 +75,10 @@ After that, tests can be run with:
 
     $ pytest
 
+When changes are testable, add or update automated tests. If automated tests
+are not feasible (e.g., Athena integration), document the reason and include
+manual verification steps in the PR description.
+
 Create a pull request
 ------------------------
 
@@ -69,4 +91,3 @@ In order to keep your fork up to date with any changes from mainline, add a new 
     $ git remote add upstream https://github.com/dbcli/athenacli.git
 
 Once the 'upstream' end point is added you can then periodically do a `git rebase <https://git-scm.com/docs/git-rebase>`_ to update your local copy.
-

@@ -61,3 +61,8 @@ target/
 
 # Jetbrains Editors
 .idea/
+
+# Nix
+.direnv/
+result
+result-*

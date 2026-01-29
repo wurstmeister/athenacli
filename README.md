@@ -31,6 +31,20 @@ $ pip install athenacli
 $ brew install athenacli
 ```
 
+### Install via Nix (Linux/macOS)
+
+```sh
+$ nix run .#athenacli -- --help
+$ nix run .#redshiftcli -- --help
+```
+
+To install into your user profile:
+
+```sh
+$ nix profile install .#athenacli
+$ nix profile install .#redshiftcli
+```
+
 If you don't know how to install python packages, please check the [Install](./docs/install.rst) page for more options (e.g docker)
 
 ## Config

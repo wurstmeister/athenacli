@@ -19,6 +19,7 @@ Install
     $ pip install athenacli
 
 You can refer to :doc:`../install` page for more options.
+Nix users can also install or run the CLIs from the flake on Linux/macOS.
 
 Config
 ------------
