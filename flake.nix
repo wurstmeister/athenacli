@@ -40,10 +40,12 @@
           redshiftDeps = with pythonPackages; [
             psycopg2-binary
           ];
+          # Extract version from athenacli __init__.py (used for both packages)
+          version = builtins.head (builtins.match ".*__version__[[:space:]]*=[[:space:]]*['\"]([^'\"]+)['\"].*" (builtins.readFile ./athenacli/__init__.py));
         in {
           athenacli = pythonPackages.buildPythonApplication {
             pname = "athenacli";
-            version = "0.0.0";
+            version = version;
             src = ./.;
             format = "setuptools";
             nativeBuildInputs = [
@@ -56,7 +58,7 @@
 
           redshiftcli = pythonPackages.buildPythonApplication {
             pname = "redshiftcli";
-            version = "0.0.0";
+            version = version;
             src = ./.;
             format = "setuptools";
             nativeBuildInputs = [
